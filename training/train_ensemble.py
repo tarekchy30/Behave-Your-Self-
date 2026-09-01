@@ -24,19 +24,20 @@ from models.ensemble import BehavioralEnsemble
 # CONFIGURATION
 # ============================================================
 
-PROCESSED_OWNER = os.path.join(
+TRAIN_OWNER = os.path.join(
     PROJECT_ROOT,
     "data",
-    "processed",
+    "train",
     "owner"
 )
 
-PROCESSED_IMPOSTOR = os.path.join(
+TRAIN_IMPOSTOR = os.path.join(
     PROJECT_ROOT,
     "data",
-    "processed",
+    "train",
     "impostor"
 )
+
 
 MODEL_DIR = os.path.join(
     PROJECT_ROOT,
@@ -186,12 +187,14 @@ def read_feature_file(path):
 def load_dataset():
 
     owner_files = load_processed_files(
-        PROCESSED_OWNER
+    TRAIN_OWNER
     )
 
     impostor_files = load_processed_files(
-        PROCESSED_IMPOSTOR
+        TRAIN_IMPOSTOR
     )
+
+    
 
     print()
     print("=" * 60)

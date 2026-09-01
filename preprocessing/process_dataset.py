@@ -2,11 +2,12 @@ import os
 import sys
 import pandas as pd
 
-# Add project root to Python path
+# ============================================================
+# PROJECT PATH
+# ============================================================
+
 PROJECT_ROOT = os.path.dirname(
-    os.path.dirname(
-        os.path.abspath(__file__)
-    )
+    os.path.dirname(os.path.abspath(__file__))
 )
 
 sys.path.insert(0, PROJECT_ROOT)
@@ -14,23 +15,26 @@ sys.path.insert(0, PROJECT_ROOT)
 from preprocessing.features import create_windows
 
 
-RAW_DIR = os.path.join(
-    PROJECT_ROOT,
-    "data",
-    "raw"
-)
+# ============================================================
+# CONFIGURATION
+# ============================================================
 
-PROCESSED_DIR = os.path.join(
-    PROJECT_ROOT,
-    "data",
-    "processed"
-)
+RAW_DIR = os.path.join(PROJECT_ROOT, "data", "raw")
+TRAIN_DIR = os.path.join(PROJECT_ROOT, "data", "train")
+TEST_DIR = os.path.join(PROJECT_ROOT, "data", "test")
 
+TRAIN_OWNER = 4
+TRAIN_IMPOSTOR = 20
+
+
+# ============================================================
+# PROCESS ONE FILE
+# ============================================================
 
 def process_file(input_path, output_path):
 
     print("-" * 60)
-    print("Processing:", input_path)
+    print("Processing:", os.path.basename(input_path))
 
     try:
 
@@ -40,7 +44,6 @@ def process_file(input_path, output_path):
         )
 
         if features is None or features.empty:
-
             print("WARNING: No feature windows generated")
             return False
 
@@ -54,145 +57,230 @@ def process_file(input_path, output_path):
             index=False
         )
 
-        print(
-            "Windows created:",
-            len(features)
-        )
-
-        print(
-            "Saved:",
-            output_path
-        )
+        print("Windows:", len(features))
+        print("Saved  :", output_path)
 
         return True
 
     except Exception as e:
 
-        print(
-            "ERROR:",
-            e
-        )
-
+        print("ERROR:", e)
         return False
 
+
+# ============================================================
+# PROCESS DATASET
+# ============================================================
 
 def process_dataset():
 
     print("=" * 60)
-    print("PROCESSING BEHAVIOR DATASET")
+    print("BEHAVIOR DATASET PREPROCESSING")
     print("=" * 60)
 
-    owner_processed = 0
-    impostor_processed = 0
-    failed = 0
-
     # --------------------------------------------------------
-    # OWNER
+    # GET RAW FILES
     # --------------------------------------------------------
 
-    owner_dir = os.path.join(
-        RAW_DIR,
-        "owner"
+    owner_dir = os.path.join(RAW_DIR, "owner")
+    impostor_dir = os.path.join(RAW_DIR, "impostor")
+
+    owner_files = sorted(
+        f for f in os.listdir(owner_dir)
+        if f.lower().endswith(".csv")
     )
 
-    if os.path.exists(owner_dir):
-
-        for filename in os.listdir(owner_dir):
-
-            if not filename.lower().endswith(".csv"):
-                continue
-
-            input_path = os.path.join(
-                owner_dir,
-                filename
-            )
-
-            output_name = (
-                os.path.splitext(filename)[0]
-                + "_features.csv"
-            )
-
-            output_path = os.path.join(
-                PROCESSED_DIR,
-                "owner",
-                output_name
-            )
-
-            if process_file(
-                input_path,
-                output_path
-            ):
-
-                owner_processed += 1
-
-            else:
-
-                failed += 1
-
-    # --------------------------------------------------------
-    # IMPOSTORS
-    # --------------------------------------------------------
-
-    impostor_dir = os.path.join(
-        RAW_DIR,
-        "impostor"
+    impostor_files = sorted(
+        f for f in os.listdir(impostor_dir)
+        if f.lower().endswith(".csv")
     )
 
-    if os.path.exists(impostor_dir):
+    # --------------------------------------------------------
+    # TRAIN / TEST SPLIT
+    # --------------------------------------------------------
 
-        for filename in os.listdir(impostor_dir):
+    train_owner = owner_files[:TRAIN_OWNER]
+    test_owner = owner_files[TRAIN_OWNER:]
 
-            if not filename.lower().endswith(".csv"):
-                continue
+    train_impostor = impostor_files[:TRAIN_IMPOSTOR]
+    test_impostor = impostor_files[TRAIN_IMPOSTOR:]
 
-            input_path = os.path.join(
-                impostor_dir,
-                filename
-            )
+    print()
+    print("DATASET SPLIT")
+    print("-" * 60)
 
-            output_name = (
-                os.path.splitext(filename)[0]
-                + "_features.csv"
-            )
+    print(f"Owner    : {len(owner_files)}")
+    print(f"Impostor : {len(impostor_files)}")
 
-            output_path = os.path.join(
-                PROCESSED_DIR,
-                "impostor",
-                output_name
-            )
+    print()
+    print("TRAIN")
+    print(f"Owner    : {len(train_owner)}")
+    print(f"Impostor : {len(train_impostor)}")
 
-            if process_file(
-                input_path,
-                output_path
-            ):
+    print()
+    print("TEST")
+    print(f"Owner    : {len(test_owner)}")
+    print(f"Impostor : {len(test_impostor)}")
 
-                impostor_processed += 1
-
-            else:
-
-                failed += 1
+    # --------------------------------------------------------
+    # PROCESS TRAIN OWNER
+    # --------------------------------------------------------
 
     print()
     print("=" * 60)
-    print("PROCESSING COMPLETE")
+    print("PROCESSING TRAIN OWNER")
     print("=" * 60)
 
-    print(
-        "Owner files    :",
-        owner_processed
-    )
+    for filename in train_owner:
 
-    print(
-        "Impostor files :",
-        impostor_processed
-    )
+        input_path = os.path.join(
+            owner_dir,
+            filename
+        )
 
-    print(
-        "Failed files   :",
-        failed
-    )
+        output_name = (
+            os.path.splitext(filename)[0]
+            + "_features.csv"
+        )
 
+        output_path = os.path.join(
+            TRAIN_DIR,
+            "owner",
+            output_name
+        )
+
+        process_file(
+            input_path,
+            output_path
+        )
+
+    # --------------------------------------------------------
+    # PROCESS TRAIN IMPOSTOR
+    # --------------------------------------------------------
+
+    print()
+    print("=" * 60)
+    print("PROCESSING TRAIN IMPOSTOR")
+    print("=" * 60)
+
+    for filename in train_impostor:
+
+        input_path = os.path.join(
+            impostor_dir,
+            filename
+        )
+
+        output_name = (
+            os.path.splitext(filename)[0]
+            + "_features.csv"
+        )
+
+        output_path = os.path.join(
+            TRAIN_DIR,
+            "impostor",
+            output_name
+        )
+
+        process_file(
+            input_path,
+            output_path
+        )
+
+    # --------------------------------------------------------
+    # PROCESS TEST OWNER
+    # --------------------------------------------------------
+
+    print()
+    print("=" * 60)
+    print("PROCESSING TEST OWNER")
+    print("=" * 60)
+
+    for filename in test_owner:
+
+        input_path = os.path.join(
+            owner_dir,
+            filename
+        )
+
+        output_name = (
+            os.path.splitext(filename)[0]
+            + "_features.csv"
+        )
+
+        output_path = os.path.join(
+            TEST_DIR,
+            "owner",
+            output_name
+        )
+
+        process_file(
+            input_path,
+            output_path
+        )
+
+    # --------------------------------------------------------
+    # PROCESS TEST IMPOSTOR
+    # --------------------------------------------------------
+
+    print()
+    print("=" * 60)
+    print("PROCESSING TEST IMPOSTOR")
+    print("=" * 60)
+
+    for filename in test_impostor:
+
+        input_path = os.path.join(
+            impostor_dir,
+            filename
+        )
+
+        output_name = (
+            os.path.splitext(filename)[0]
+            + "_features.csv"
+        )
+
+        output_path = os.path.join(
+            TEST_DIR,
+            "impostor",
+            output_name
+        )
+
+        process_file(
+            input_path,
+            output_path
+        )
+
+    # --------------------------------------------------------
+    # SUMMARY
+    # --------------------------------------------------------
+
+    print()
+    print("=" * 60)
+    print("PREPROCESSING COMPLETE")
+    print("=" * 60)
+
+    print()
+    print("Training data:")
+    print(f"  Owner    : {len(train_owner)}")
+    print(f"  Impostor : {len(train_impostor)}")
+
+    print()
+    print("Testing data:")
+    print(f"  Owner    : {len(test_owner)}")
+    print(f"  Impostor : {len(test_impostor)}")
+
+    print()
+    print("Train directory:")
+    print(TRAIN_DIR)
+
+    print()
+    print("Test directory:")
+    print(TEST_DIR)
+
+
+# ============================================================
+# MAIN
+# ============================================================
 
 if __name__ == "__main__":
-
     process_dataset()

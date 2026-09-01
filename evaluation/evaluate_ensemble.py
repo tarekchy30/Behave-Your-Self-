@@ -1,20 +1,13 @@
 import os
 import sys
 import pickle
-
 import numpy as np
 import pandas as pd
 import torch
-import torch.nn.functional as F
-
-# ============================================================
-# PROJECT PATH
-# ============================================================
 
 PROJECT_ROOT = os.path.dirname(
     os.path.dirname(os.path.abspath(__file__))
 )
-
 sys.path.insert(0, PROJECT_ROOT)
 
 from models.ensemble import BehavioralEnsemble
@@ -23,163 +16,159 @@ from models.ensemble import BehavioralEnsemble
 # ============================================================
 # PATHS
 # ============================================================
-
-OWNER_DIR = os.path.join(
+TRAIN_OWNER = os.path.join(
     PROJECT_ROOT,
     "data",
-    "processed",
+    "train",
     "owner"
 )
 
-IMPOSTOR_DIR = os.path.join(
+TEST_OWNER = os.path.join(
     PROJECT_ROOT,
     "data",
-    "processed",
+    "test",
+    "owner"
+)
+
+TEST_IMPOSTOR = os.path.join(
+    PROJECT_ROOT,
+    "data",
+    "test",
     "impostor"
 )
 
+
+
+
 MODEL_PATH = os.path.join(
-    PROJECT_ROOT,
-    "trained_model",
-    "ensemble_model.pth"
+    PROJECT_ROOT, "trained_model", "ensemble_model.pth"
 )
 
 SCALER_PATH = os.path.join(
-    PROJECT_ROOT,
-    "trained_model",
-    "ensemble_scaler.pkl"
+    PROJECT_ROOT, "trained_model", "ensemble_scaler.pkl"
 )
 
 
-# ============================================================
-# CONFIGURATION
-# ============================================================
-
-FEATURE_COLUMNS = [
+FEATURES = [
     "key_dwell_mean",
     "key_dwell_std",
     "key_dwell_median",
-
     "flight_time_mean",
     "flight_time_std",
     "flight_time_median",
-
     "typing_event_rate",
-
     "mouse_velocity_mean",
     "mouse_velocity_std",
-
     "mouse_distance_mean",
-
     "mouse_direction_change",
-
     "click_interval_mean",
     "click_interval_std"
 ]
 
 
 # ============================================================
-# LOAD FEATURE FILES
+# LOAD DATA
 # ============================================================
 
-def load_files(folder):
+def load_folder(folder):
 
-    files = []
+    data = []
 
     if not os.path.exists(folder):
-        return files
 
-    for filename in os.listdir(folder):
+        raise FileNotFoundError(
+            f"Folder does not exist: {folder}"
+        )
 
-        if filename.endswith("_features.csv"):
+    for file in sorted(os.listdir(folder)):
 
-            files.append(
-                os.path.join(
-                    folder,
-                    filename
+        if file.lower().endswith("_features.csv"):
+
+            path = os.path.join(
+                folder,
+                file
+            )
+
+            df = pd.read_csv(path)
+
+            if df.empty:
+                continue
+
+            missing = [
+                feature
+                for feature in FEATURES
+                if feature not in df.columns
+            ]
+
+            if missing:
+
+                raise RuntimeError(
+                    f"Missing features in {path}: {missing}"
+                )
+
+            x = df[FEATURES].copy()
+
+            x = x.replace(
+                [np.inf, -np.inf],
+                np.nan
+            ).fillna(0)
+
+            data.append(
+                x.values.astype(
+                    np.float32
                 )
             )
 
-    return sorted(files)
-
-
-# ============================================================
-# READ FEATURES
-# ============================================================
-
-def read_features(path):
-
-    df = pd.read_csv(path)
-
-    if df.empty:
-        return []
-
-    missing = [
-        c for c in FEATURE_COLUMNS
-        if c not in df.columns
-    ]
-
-    if missing:
+    if not data:
 
         raise RuntimeError(
-            f"Missing features in {path}: {missing}"
+            f"No feature files found: {folder}"
         )
 
-    values = df[
-        FEATURE_COLUMNS
-    ].copy()
-
-    values = values.replace(
-        [np.inf, -np.inf],
-        np.nan
-    )
-
-    values = values.fillna(0.0)
-
-    return values.values.astype(
-        np.float32
-    )
+    return np.vstack(data)
 
 
 # ============================================================
-# LOAD SCALER
+# EMBEDDINGS
 # ============================================================
 
-def load_scaler():
+def embeddings(model, device, data):
 
-    with open(
-        SCALER_PATH,
-        "rb"
-    ) as f:
+    result = []
 
-        scaler = pickle.load(f)
+    with torch.no_grad():
 
-    return scaler
+        for row in data:
+
+            x = torch.tensor(
+                row,
+                dtype=torch.float32,
+                device=device
+            ).unsqueeze(0).unsqueeze(1)
+
+            emb, _ = model(x)
+
+            result.append(
+                emb.squeeze(0)
+                .cpu()
+                .numpy()
+            )
+
+    return np.array(result)
 
 
 # ============================================================
-# APPLY SCALER
+# MAIN
 # ============================================================
 
-def scale_features(
-    features,
-    scaler
-):
+def evaluate():
 
-    return (
-        features - scaler["mean"]
-    ) / scaler["std"]
-
-
-# ============================================================
-# LOAD MODEL
-# ============================================================
-
-def load_model():
+    print("=" * 60)
+    print("ENSEMBLE MODEL TESTING")
+    print("=" * 60)
 
     device = torch.device(
-        "cuda"
-        if torch.cuda.is_available()
+        "cuda" if torch.cuda.is_available()
         else "cpu"
     )
 
@@ -196,430 +185,153 @@ def load_model():
     )
 
     model.to(device)
-
     model.eval()
 
-    return model, device, checkpoint
+    with open(SCALER_PATH, "rb") as f:
+        scaler = pickle.load(f)
 
+    # -------------------------------
+    # LOAD
+    # -------------------------------
 
-# ============================================================
-# CREATE EMBEDDINGS
-# ============================================================
-
-def create_embeddings(
-    model,
-    device,
-    features
-):
-
-    embeddings = []
-
-    with torch.no_grad():
-
-        for row in features:
-
-            # [13] -> [1, 13]
-            x = torch.tensor(
-                row,
-                dtype=torch.float32,
-                device=device
-            ).unsqueeze(0)
-
-            # [1, 13] -> [1, 1, 13]
-            x = x.unsqueeze(1)
-
-            embedding, _ = model(x)
-
-            embeddings.append(
-                embedding.squeeze(0)
-                .cpu()
-                .numpy()
-            )
-
-    return np.array(
-        embeddings
+    train_owner = load_folder(
+        TRAIN_OWNER
     )
 
-
-# ============================================================
-# EUCLIDEAN DISTANCE
-# ============================================================
-
-def distance(a, b):
-
-    return float(
-        np.linalg.norm(a - b)
+    test_owner = load_folder(
+        TEST_OWNER
     )
 
-
-# ============================================================
-# FIND THRESHOLD
-# ============================================================
-
-def find_threshold(
-    genuine_distances,
-    impostor_distances
-):
-
-    all_distances = np.concatenate(
-        [
-            genuine_distances,
-            impostor_distances
-        ]
-    )
-
-    best_threshold = None
-    best_accuracy = -1
-
-    for threshold in all_distances:
-
-        genuine_correct = np.sum(
-            genuine_distances <= threshold
-        )
-
-        impostor_correct = np.sum(
-            impostor_distances > threshold
-        )
-
-        total = (
-            len(genuine_distances)
-            +
-            len(impostor_distances)
-        )
-
-        accuracy = (
-            genuine_correct
-            +
-            impostor_correct
-        ) / total
-
-        if accuracy > best_accuracy:
-
-            best_accuracy = accuracy
-
-            best_threshold = threshold
-
-    return (
-        best_threshold,
-        best_accuracy
-    )
-
-
-# ============================================================
-# MAIN EVALUATION
-# ============================================================
-
-def evaluate():
-
-    print()
-    print("=" * 60)
-    print("ENSEMBLE MODEL EVALUATION")
-    print("=" * 60)
-
-    # --------------------------------------------------------
-    # Check model
-    # --------------------------------------------------------
-
-    if not os.path.exists(
-        MODEL_PATH
-    ):
-
-        raise RuntimeError(
-            "Ensemble model not found."
-        )
-
-    if not os.path.exists(
-        SCALER_PATH
-    ):
-
-        raise RuntimeError(
-            "Ensemble scaler not found."
-        )
-
-    # --------------------------------------------------------
-    # Load model
-    # --------------------------------------------------------
-
-    model, device, checkpoint = (
-        load_model()
+    test_impostor = load_folder(
+        TEST_IMPOSTOR
     )
 
     print()
-    print(
-        "Model loaded successfully."
-    )
+    print("Training owner samples :", len(train_owner))
+    print("Test owner samples     :", len(test_owner))
+    print("Test impostor samples  :", len(test_impostor))
 
-    print(
-        "Device:",
-        device
-    )
+    # -------------------------------
+    # SCALE
+    # -------------------------------
 
-    # --------------------------------------------------------
-    # Load scaler
-    # --------------------------------------------------------
+    train_owner = (
+        train_owner - scaler["mean"]
+    ) / scaler["std"]
 
-    scaler = load_scaler()
+    test_owner = (
+        test_owner - scaler["mean"]
+    ) / scaler["std"]
 
-    # --------------------------------------------------------
-    # Owner
-    # --------------------------------------------------------
+    test_impostor = (
+        test_impostor - scaler["mean"]
+    ) / scaler["std"]
 
-    owner_files = load_files(
-        OWNER_DIR
-    )
-
-    owner_features = []
-
-    for path in owner_files:
-
-        owner_features.extend(
-            read_features(path)
-        )
-
-    owner_features = np.array(
-        owner_features,
-        dtype=np.float32
-    )
-
-    # --------------------------------------------------------
-    # Impostor
-    # --------------------------------------------------------
-
-    impostor_files = load_files(
-        IMPOSTOR_DIR
-    )
-
-    impostor_features = []
-
-    for path in impostor_files:
-
-        impostor_features.extend(
-            read_features(path)
-        )
-
-    impostor_features = np.array(
-        impostor_features,
-        dtype=np.float32
-    )
-
-    print()
-    print(
-        "Owner samples   :",
-        len(owner_features)
-    )
-
-    print(
-        "Impostor samples:",
-        len(impostor_features)
-    )
-
-    # --------------------------------------------------------
-    # Scale
-    # --------------------------------------------------------
-
-    owner_features = scale_features(
-        owner_features,
-        scaler
-    )
-
-    impostor_features = scale_features(
-        impostor_features,
-        scaler
-    )
-
-    # --------------------------------------------------------
-    # Generate embeddings
-    # --------------------------------------------------------
-
-    print()
-    print(
-        "Generating owner embeddings..."
-    )
-
-    owner_embeddings = create_embeddings(
-        model,
-        device,
-        owner_features
-    )
-
-    print(
-        "Generating impostor embeddings..."
-    )
-
-    impostor_embeddings = create_embeddings(
-        model,
-        device,
-        impostor_features
-    )
-
-    # --------------------------------------------------------
-    # Owner reference profile
-    # --------------------------------------------------------
+    # -------------------------------
+    # EMBEDDINGS
+    # -------------------------------
 
     owner_profile = np.mean(
-        owner_embeddings,
+        embeddings(
+            model,
+            device,
+            train_owner
+        ),
         axis=0
     )
 
-    # --------------------------------------------------------
-    # Genuine distances
-    # --------------------------------------------------------
-
-    genuine_distances = []
-
-    for embedding in owner_embeddings:
-
-        genuine_distances.append(
-            distance(
-                embedding,
-                owner_profile
-            )
-        )
-
-    genuine_distances = np.array(
-        genuine_distances
+    owner_test = embeddings(
+        model,
+        device,
+        test_owner
     )
 
-    # --------------------------------------------------------
-    # Impostor distances
-    # --------------------------------------------------------
-
-    impostor_distances = []
-
-    for embedding in impostor_embeddings:
-
-        impostor_distances.append(
-            distance(
-                embedding,
-                owner_profile
-            )
-        )
-
-    impostor_distances = np.array(
-        impostor_distances
+    impostor_test = embeddings(
+        model,
+        device,
+        test_impostor
     )
 
-    # --------------------------------------------------------
-    # Statistics
-    # --------------------------------------------------------
+    # -------------------------------
+    # DISTANCES
+    # -------------------------------
 
-    print()
-    print("=" * 60)
-    print("DISTANCE ANALYSIS")
-    print("=" * 60)
-
-    print()
-
-    print(
-        "Owner distance:"
+    owner_dist = np.linalg.norm(
+        owner_test - owner_profile,
+        axis=1
     )
 
-    print(
-        f"  Mean   : {np.mean(genuine_distances):.6f}"
+    impostor_dist = np.linalg.norm(
+        impostor_test - owner_profile,
+        axis=1
     )
 
-    print(
-        f"  Std    : {np.std(genuine_distances):.6f}"
-    )
+    # -------------------------------
+    # THRESHOLD
+    # -------------------------------
 
-    print(
-        f"  Min    : {np.min(genuine_distances):.6f}"
-    )
+    threshold = (
+        np.max(owner_dist)
+        + np.min(impostor_dist)
+    ) / 2
 
-    print(
-        f"  Max    : {np.max(genuine_distances):.6f}"
-    )
+    owner_accept = owner_dist <= threshold
+    impostor_reject = impostor_dist > threshold
 
-    print()
-
-    print(
-        "Impostor distance:"
-    )
-
-    print(
-        f"  Mean   : {np.mean(impostor_distances):.6f}"
-    )
-
-    print(
-        f"  Std    : {np.std(impostor_distances):.6f}"
-    )
-
-    print(
-        f"  Min    : {np.min(impostor_distances):.6f}"
-    )
-
-    print(
-        f"  Max    : {np.max(impostor_distances):.6f}"
-    )
-
-    # --------------------------------------------------------
-    # Threshold
-    # --------------------------------------------------------
-
-    threshold, accuracy = find_threshold(
-        genuine_distances,
-        impostor_distances
-    )
-
-    print()
-    print("=" * 60)
-    print("THRESHOLD")
-    print("=" * 60)
-
-    print(
-        f"Best threshold : {threshold:.6f}"
-    )
-
-    print(
-        f"Accuracy       : {accuracy * 100:.2f}%"
-    )
-
-    # --------------------------------------------------------
-    # FAR
-    # --------------------------------------------------------
-
-    false_accepts = np.sum(
-        impostor_distances <= threshold
-    )
-
-    false_rejects = np.sum(
-        genuine_distances > threshold
+    accuracy = (
+        owner_accept.sum()
+        + impostor_reject.sum()
+    ) / (
+        len(owner_dist)
+        + len(impostor_dist)
     )
 
     far = (
-        false_accepts /
-        max(len(impostor_distances), 1)
+        (~impostor_reject).sum()
+        / len(impostor_dist)
     )
 
     frr = (
-        false_rejects /
-        max(len(genuine_distances), 1)
+        (~owner_accept).sum()
+        / len(owner_dist)
     )
+
+    # -------------------------------
+    # RESULTS
+    # -------------------------------
 
     print()
     print("=" * 60)
-    print("SECURITY METRICS")
+    print("TEST RESULTS")
     print("=" * 60)
 
-    print(
-        f"False Acceptance Rate : {far * 100:.2f}%"
-    )
+    print(f"Owner distance    : {owner_dist.mean():.4f}")
+    print(f"Impostor distance : {impostor_dist.mean():.4f}")
+    print(f"Threshold         : {threshold:.4f}")
 
-    print(
-        f"False Rejection Rate  : {frr * 100:.2f}%"
-    )
+    print()
+    print(f"Accuracy : {accuracy * 100:.2f}%")
+    print(f"FAR      : {far * 100:.2f}%")
+    print(f"FRR      : {frr * 100:.2f}%")
 
-    print(
-        f"False Accepts         : {false_accepts}"
-    )
+    print()
+    print("=" * 60)
+    print("AUTHENTICATION EXAMPLES")
+    print("=" * 60)
 
-    print(
-        f"False Rejects         : {false_rejects}"
-    )
+    for i, d in enumerate(owner_dist[:5], 1):
+        result = "OWNER" if d <= threshold else "IMPOSTOR"
+        print(
+            f"Owner test {i:02d}: "
+            f"{d:.4f} -> {result}"
+        )
 
-    # --------------------------------------------------------
-    # Final
-    # --------------------------------------------------------
+    for i, d in enumerate(impostor_dist[:5], 1):
+        result = "OWNER" if d <= threshold else "IMPOSTOR"
+        print(
+            f"Impostor test {i:02d}: "
+            f"{d:.4f} -> {result}"
+        )
 
     print()
     print("=" * 60)
@@ -627,11 +339,5 @@ def evaluate():
     print("=" * 60)
 
 
-# ============================================================
-# RUN
-# ============================================================
-
 if __name__ == "__main__":
-
     evaluate()
- 

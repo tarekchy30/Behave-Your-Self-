@@ -1,0 +1,2 @@
+key_dwell_mean,key_dwell_std,key_dwell_median,flight_time_mean,flight_time_std,flight_time_median,typing_event_rate,mouse_velocity_mean,mouse_velocity_std,mouse_distance_mean,mouse_direction_change,click_interval_mean,click_interval_std,window_start,window_end
+0.8442591031392416,0.647445243366206,0.8236578702926636,0.9957404931386312,0.7685271278959973,1.0806572437286377,0.8621969740307168,0.0,0.0,0.0,0.0,2.3610165119171143,1.4273179828584384,0.0,30.0
