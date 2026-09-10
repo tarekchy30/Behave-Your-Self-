@@ -81,9 +81,11 @@ Explore our complete project presentation through the five sections below.
 
 | 📚 Resource | 📝 Description | 🔗 Access |
 |---|---|---|
-| 🎥 Presentation Videos | Five individual presentation videos covering the complete project | [Watch Videos](#-ai-project-presentation-videos) |
-| 🎞️ Presentation Slides | Complete project presentation slides | [View Slides]([YOUR_PRESENTATION_SLIDES_LINK](https://1drv.ms/p/c/6a644061151de93e/IQCKvmeg-ja2RI5pOuSIydHTAQ8RUPcevNAJ-rorsisur1A)) |
-| 📘 Project Report | Full academic project report | [View Report]([YOUR_PROJECT_REPORT_LINK](https://drive.google.com/file/d/1N_DjQTbNJDj434o_LfAsAAYpnZRqPlTQ/view?usp=sharing)) |
+| 🎥 **Presentation Videos** | Five individual videos covering the complete project presentation | [▶️ Watch Videos](#-ai-project-presentation-videos) |
+| 🎞️ **Presentation Slides** | Complete slides covering the project's architecture, methodology, implementation, and results | [📊 View Slides](https://1drv.ms/p/c/6a644061151de93e/IQCKvmeg-ja2RI5pOuSIydHTAQ8RUPcevNAJ-rorsisur1A) |
+| 📘 **Project Report** | Full academic report documenting the research, methodology, implementation, evaluation, and conclusions | [📖 View Report](https://drive.google.com/file/d/1N_DjQTbNJDj434o_LfAsAAYpnZRqPlTQ/view?usp=sharing) |
+
+
 
 ---
 
