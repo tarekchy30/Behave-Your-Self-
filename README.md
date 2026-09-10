@@ -1,4 +1,10 @@
-﻿## 🎥 AI Project Presentation Videos
+## 🎓 Project Presentation & Documentation
+
+> Explore our complete project presentation, including individual presentation videos, presentation slides, and the full project report.
+
+---
+
+### 🎥 AI Project Presentation Videos
 
 Explore our complete project presentation through the five sections below.
 
@@ -49,8 +55,48 @@ Explore our complete project presentation through the five sections below.
 
 ---
 
-### 🎯 Complete Presentation
+## 📑 Presentation Slides
 
-**01 → Overview** → **02 → Data** → **03 → Authentication** → **04 → Evaluation** → **05 → Future Work**
+> 📊 View the complete presentation slides covering the project's methodology, AI architecture, implementation, evaluation, and results.
 
-> 💡 Watch the presentations in order for the complete story of our AI-based behavioral authentication system.
+### 🎞️ Complete Presentation Slides
+
+📥 **[View / Download Presentation Slides](YOUR_PRESENTATION_SLIDES_LINK)**
+
+---
+
+## 📘 Project Report
+
+> 📖 Read the complete project report for detailed information about the research methodology, system design, implementation, experiments, results, and conclusions.
+
+### 📕 Complete Project Report
+
+📥 **[View / Download Project Report](YOUR_PROJECT_REPORT_LINK)**
+
+---
+
+## 🗂️ Project Documentation
+
+| 📚 Resource | 📝 Description | 🔗 Access |
+|---|---|---|
+| 🎥 Presentation Videos | Five individual presentation videos covering the complete project | [Watch Videos](#-ai-project-presentation-videos) |
+| 🎞️ Presentation Slides | Complete project presentation slides | [View Slides]( (https://1drv.ms/p/c/6a644061151de93e/IQCKvmeg-ja2RI5pOuSIydHTAQ8RUPcevNAJ-rorsisur1A)) |
+| 📘 Project Report | Full academic project report | [View Report](https://drive.google.com/file/d/1N_DjQTbNJDj434o_LfAsAAYpnZRqPlTQ/view?usp=sharing) |
+
+---
+
+### 🎯 Complete Project Overview
+
+**01 → Project Overview**  
+↓  
+**02 → Data Collection & Feature Extraction**  
+↓  
+**03 → Authentication & Training**  
+↓  
+**04 → Evaluation & Results**  
+↓  
+**05 → Conclusion & Future Work**  
+↓  
+**📑 Presentation Slides + 📘 Project Report**
+
+> 💡 **For the complete understanding of the project, we recommend reviewing the presentation videos, slides, and project report together.**
