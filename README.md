@@ -61,7 +61,7 @@ Explore our complete project presentation through the five sections below.
 
 ### 🎞️ Complete Presentation Slides
 
-📥 **[View / Download Presentation Slides](YOUR_PRESENTATION_SLIDES_LINK)**
+📥 **[View / Download Presentation Slides](https://docs.google.com/presentation/d/1K74Jrn1CvVYUYPATYnzgrINaeBaCs1TO/edit)**
 
 ---
 
@@ -71,10 +71,9 @@ Explore our complete project presentation through the five sections below.
 
 ### 📕 Complete Project Report
 
-📥 **[View / Download Project Report](YOUR_PROJECT_REPORT_LINK)**
+📥 **[View / Download Project Report](https://drive.google.com/file/d/1N_DjQTbNJDj434o_LfAsAAYpnZRqPlTQ/view?usp=sharing)**
 
 ---
-
 
 
 ## 🗂️ Project Documentation
@@ -82,8 +81,9 @@ Explore our complete project presentation through the five sections below.
 | 📚 Resource | 📝 Description | 🔗 Access |
 |---|---|---|
 | 🎥 **Presentation Videos** | Five individual videos covering the complete project presentation | [▶️ Watch Videos](#-ai-project-presentation-videos) |
-| 🎞️ **Presentation Slides** | Complete slides covering the project's architecture, methodology, implementation, and results | [📊 View Slides](https://1drv.ms/p/c/6a644061151de93e/IQCKvmeg-ja2RI5pOuSIydHTAQ8RUPcevNAJ-rorsisur1A) |
+| 🎞️ **Presentation Slides** | Complete slides covering the project's architecture, methodology, implementation, and results | [📊 View Slides](https://docs.google.com/presentation/d/1K74Jrn1CvVYUYPATYnzgrINaeBaCs1TO/edit?usp=sharing&ouid=109843615587508669714&rtpof=true&sd=true) |
 | 📘 **Project Report** | Full academic report documenting the research, methodology, implementation, evaluation, and conclusions | [📖 View Report](https://drive.google.com/file/d/1N_DjQTbNJDj434o_LfAsAAYpnZRqPlTQ/view?usp=sharing) |
+
 
 
 
